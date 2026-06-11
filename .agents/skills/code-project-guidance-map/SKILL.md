@@ -1,6 +1,6 @@
 ---
 name: code-project-guidance-map
-description: Create or refresh a structured code module guidance map in AGENTS.md for a repository. Use when the user asks Codex to read a project, map code structure, document module responsibilities, initialize project guidance, refresh an AGENTS.md project guide, or keep a concise module guide up to date from Git changes. When invoked, the main agent must decide macro module boundaries first, then use explicitly authorized subagents for bounded module-internal exploration when available.
+description: Create or refresh a structured code module guidance map and dependency-rule section in AGENTS.md for a repository. Use when the user asks Codex to read a project, map code structure, document module responsibilities, clarify module dependency boundaries, initialize project guidance, refresh an AGENTS.md project guide, or keep a concise module guide up to date from Git changes. When invoked, the main agent must decide macro module boundaries first, then use explicitly authorized subagents for bounded module-internal exploration when available.
 ---
 
 # Code Project Guidance Map
@@ -49,17 +49,22 @@ python <skill-dir>/scripts/guidance_map.py status --repo <repo-root>
    - Do not spawn subagents until this draft macro map exists.
    - Do not delegate the global module-boundary decision.
    - Let the actual code structure drive module boundaries. Do not force a top-level-only or all-directories scheme.
+   - Derive project-specific dependency direction rules from the macro map, build files, package names, imports, controllers/services/DAOs, SQL mappings, and domain ownership clues.
 
 6. Delegate module-internal exploration after authorization.
    - Treat any user prompt or default prompt that says `use subagents`, `delegate`, `parallel agents`, or equivalent as explicit authorization. Do not ask again.
    - If the user did not explicitly authorize subagents and the project needs non-trivial reading, ask one concise yes/no question before spawning: `Use subagents for module-internal exploration?`
    - When authorized and a subagent/delegation tool is available, spawn the smallest useful set of explorer subagents after step 5.
-   - Give each subagent a module name, bounded path scope, relevant changed files if any, and ask for: key files/directories, module capability evidence, responsibility boundaries, internal structure, and uncertainty.
+   - Give each subagent a module name, bounded path scope, relevant changed files if any, and ask for: key files/directories, module capability evidence, responsibility boundaries, dependency evidence, internal structure, and uncertainty.
    - Subagents must not edit files, update `AGENTS.md`, or decide the global module map.
    - The main agent integrates subagent findings and writes the final guide.
    - If subagents are unavailable or not authorized, perform the same internal exploration locally and mention that fallback in the final response.
 
 7. Write a concise English guide optimized for human readability.
+   - Include a `### Module Dependency Rules` section before the module entries.
+   - Write 4-10 dependency rules as direct bullets. Prefer rules that help a future agent decide where code belongs and which dependencies are forbidden.
+   - Cover layer direction, shared utility constraints, domain ownership, facade/orchestration boundaries, persistence placement, and controller/service/DAO flow when the project provides evidence.
+   - Keep rules project-specific. Do not paste example module names such as `common`, `web`, `modules/core`, or `oriot` unless those modules actually exist in the target project.
    - Use a short, human-friendly module name as the `###` heading. Do not put long paths in the heading.
    - Put paths in `Module Path` as a separate field.
    - Use `Module Contains` with a small fenced `text` tree or list for the main directories/files included in the module.
@@ -88,6 +93,11 @@ Generated at: <ISO-8601 timestamp>
 Git baseline: <HEAD sha or none>
 Signature algorithm: sha256:v1
 Signature: sha256:<64 lowercase hex chars>
+
+### Module Dependency Rules
+
+- <project-specific dependency direction or boundary rule>
+- <project-specific forbidden dependency or ownership rule>
 
 ### <short module name>
 

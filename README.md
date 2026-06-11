@@ -12,6 +12,8 @@ This plugin comes from the Codex repository feature request: [Feature request: A
 
 That issue asks Codex to generate and maintain a standardized code audit module for modular codebases, so later agents do not need to reread large parts of the source tree from scratch. Because the feature request is still open and does not currently show an assignee, project, milestone, or linked implementation PR, this repository implements the workflow as a standalone Codex plugin first.
 
+Part of the inspiration also comes from OpenAI's article [Harness engineering: leveraging Codex in an agent-first world](https://openai.com/index/harness-engineering/), especially its framing of repository-local knowledge as the system of record, `AGENTS.md` as a compact map rather than a giant manual, and agent legibility as an engineering goal.
+
 ## What It Does
 
 When you invoke this skill in a target repository, it will:
@@ -29,11 +31,11 @@ The fixed marker block is:
 <!-- code-project-guidance-map:end -->
 ```
 
-Each module entry contains three concise Chinese fields:
+Each module entry contains three concise English fields:
 
-- `模块能力`: what capability the module provides.
-- `模块作用`: what code belongs in the module.
-- `模块描述`: the module's rough internal structure.
+- `Module Capability`: what capability the module provides.
+- `Module Responsibility`: what code belongs in the module.
+- `Module Structure`: the module's rough internal structure.
 
 ## Quick Start
 
@@ -105,9 +107,9 @@ Git baseline: abc1234
 
 ### src/core
 
-- 模块能力: 提供核心业务规则和领域流程。
-- 模块作用: 放置跨入口复用的业务逻辑、状态转换和领域服务。
-- 模块描述: 由领域模型、服务函数和少量协调逻辑组成。
+- Module Capability: Provides core business rules and domain workflows.
+- Module Responsibility: Contains reusable business logic, state transitions, and domain services.
+- Module Structure: Organized around domain models, service functions, and lightweight coordination logic.
 <!-- code-project-guidance-map:end -->
 ```
 
@@ -179,16 +181,6 @@ codex plugin add code-project-guidance-map@code-project-guidance-map
 ```
 
 Then start a new Codex thread so Codex loads the updated plugin.
-
-## Coworker Commit Convention
-
-When Codex materially contributes code, docs, or plugin behavior, include Codex as a coworker in the commit trailer:
-
-```text
-Co-authored-by: OpenAI Codex <codex@openai.com>
-```
-
-This makes it clear that the change came from human and Codex collaboration.
 
 ## Project Intent
 

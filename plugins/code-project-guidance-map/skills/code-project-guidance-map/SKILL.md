@@ -49,10 +49,10 @@ python <skill-dir>/scripts/guidance_map.py status --repo <repo-root>
    - If subagents are unavailable, perform the same analysis yourself.
    - Let the analysis decide module boundaries from actual code structure. Do not force a top-level-only or all-directories scheme.
 
-6. Write a concise Chinese guide. Each module must include exactly these three labels:
-   - `模块能力`: what capability the module provides.
-   - `模块作用`: what belongs in this module.
-   - `模块描述`: the module's rough structure.
+6. Write a concise English guide. Each module must include exactly these three labels:
+   - `Module Capability`: what capability the module provides.
+   - `Module Responsibility`: what belongs in this module.
+   - `Module Structure`: the module's rough internal structure.
 
 7. Save the guide body to a temporary file, then update `AGENTS.md` with:
 
@@ -75,9 +75,9 @@ Git baseline: <HEAD sha or none>
 
 ### <module path or name>
 
-- 模块能力: <one concise sentence>
-- 模块作用: <one concise sentence>
-- 模块描述: <one concise sentence>
+- Module Capability: <one concise English sentence>
+- Module Responsibility: <one concise English sentence>
+- Module Structure: <one concise English sentence>
 ```
 
 Keep every module entry compact. Prefer one line per field. Avoid implementation trivia, long file inventories, and broad architecture essays.

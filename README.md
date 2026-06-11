@@ -181,6 +181,9 @@ To publish it through a team marketplace:
 │       └── code-project-guidance-map/
 ├── docs/
 │   └── codex-skills-research.md
+├── scripts/
+│   ├── sync_plugin_skill.py
+│   └── test_sync_plugin_skill.py
 └── plugins/
     └── code-project-guidance-map/
         ├── .codex-plugin/
@@ -191,9 +194,23 @@ To publish it through a team marketplace:
 
 ## Development And Validation
 
-After changing the skill or plugin, run:
+The development skill is the source of truth:
+
+```text
+.agents/skills/code-project-guidance-map/
+```
+
+After changing the skill, sync it into the distributable plugin copy:
 
 ```powershell
+python scripts\sync_plugin_skill.py
+python scripts\sync_plugin_skill.py --check
+```
+
+Then validate:
+
+```powershell
+python scripts\test_sync_plugin_skill.py
 python .agents\skills\code-project-guidance-map\scripts\test_guidance_map.py
 python plugins\code-project-guidance-map\skills\code-project-guidance-map\scripts\test_guidance_map.py
 python <codex-checkout>\codex-rs\skills\src\assets\samples\skill-creator\scripts\quick_validate.py .agents\skills\code-project-guidance-map
@@ -204,6 +221,7 @@ python <plugin-creator-skill>\scripts\validate_plugin.py plugins\code-project-gu
 If the plugin is already installed locally, reinstall it after changes:
 
 ```powershell
+python <plugin-creator-skill>\scripts\update_plugin_cachebuster.py plugins\code-project-guidance-map
 codex plugin add code-project-guidance-map@code-project-guidance-map
 ```
 
@@ -213,4 +231,4 @@ Then start a new Codex thread so Codex loads the updated plugin.
 
 This project aims to move Codex from temporary source reading toward reusable project memory.
 
-By writing module boundaries, responsibilities, and placement rules into `AGENTS.md`, later Codex sessions can locate code faster, guess less about module ownership, and participate more reliably in feature work, refactoring, and code review.
+The goal is not to produce a complete project manual. The plugin compiles the parts of a codebase that later agents need most: module boundaries, dependency direction, ownership rules, and compact navigation cues. By writing those constraints into `AGENTS.md`, later Codex sessions can locate code faster, guess less about module ownership, and participate more reliably in feature work, refactoring, and code review.

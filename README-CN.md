@@ -181,6 +181,9 @@ codex plugin add code-project-guidance-map@code-project-guidance-map
 │       └── code-project-guidance-map/
 ├── docs/
 │   └── codex-skills-research.md
+├── scripts/
+│   ├── sync_plugin_skill.py
+│   └── test_sync_plugin_skill.py
 └── plugins/
     └── code-project-guidance-map/
         ├── .codex-plugin/
@@ -191,9 +194,23 @@ codex plugin add code-project-guidance-map@code-project-guidance-map
 
 ## 开发和验证
 
-修改 skill 或 plugin 后，建议运行：
+开发用 skill 是唯一源：
+
+```text
+.agents/skills/code-project-guidance-map/
+```
+
+修改 skill 后，先同步到可分发的 plugin 副本：
 
 ```powershell
+python scripts\sync_plugin_skill.py
+python scripts\sync_plugin_skill.py --check
+```
+
+然后运行验证：
+
+```powershell
+python scripts\test_sync_plugin_skill.py
 python .agents\skills\code-project-guidance-map\scripts\test_guidance_map.py
 python plugins\code-project-guidance-map\skills\code-project-guidance-map\scripts\test_guidance_map.py
 python <codex-checkout>\codex-rs\skills\src\assets\samples\skill-creator\scripts\quick_validate.py .agents\skills\code-project-guidance-map
@@ -204,6 +221,7 @@ python <plugin-creator-skill>\scripts\validate_plugin.py plugins\code-project-gu
 本机开发时，如果插件已经安装过，改完后重新安装：
 
 ```powershell
+python <plugin-creator-skill>\scripts\update_plugin_cachebuster.py plugins\code-project-guidance-map
 codex plugin add code-project-guidance-map@code-project-guidance-map
 ```
 
@@ -213,4 +231,4 @@ codex plugin add code-project-guidance-map@code-project-guidance-map
 
 这个项目的目标是让 Codex 从“临时读代码”变成“有项目记忆地协作”。
 
-通过把模块边界、模块职责和放置规则写入 `AGENTS.md`，Codex 后续在同一个项目里工作时，可以更快定位代码、更少猜测模块职责，并更稳定地参与需求实现、重构和代码审查。
+它的目标不是生成完整项目手册，而是提炼后续 agent 最需要的部分：模块边界、依赖方向、归属规则和紧凑导航线索。通过把这些约束写入 `AGENTS.md`，Codex 后续在同一个项目里工作时，可以更快定位代码、更少猜测模块职责，并更稳定地参与需求实现、重构和代码审查。

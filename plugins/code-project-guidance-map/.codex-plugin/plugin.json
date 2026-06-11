@@ -1,0 +1,31 @@
+{
+  "name": "code-project-guidance-map",
+  "version": "0.1.0",
+  "description": "Create and refresh concise AGENTS.md module guidance maps for Codex projects.",
+  "author": {
+    "name": "Heyu2002"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "codex",
+    "agents-md",
+    "project-guidance",
+    "code-map"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Code Project Guidance Map",
+    "shortDescription": "Create AGENTS.md module guidance maps.",
+    "longDescription": "Builds and refreshes marker-delimited AGENTS.md guidance that summarizes project modules with capability, placement guidance, and concise structure notes.",
+    "developerName": "Heyu2002",
+    "category": "Productivity",
+    "capabilities": [
+      "Write",
+      "Project guidance",
+      "Codebase analysis"
+    ],
+    "defaultPrompt": [
+      "Use $code-project-guidance-map to refresh this project's AGENTS.md module guide."
+    ]
+  }
+}

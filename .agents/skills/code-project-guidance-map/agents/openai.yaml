@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Project Guidance Map"
+  short_description: "Create AGENTS.md module guidance maps"
+  default_prompt: "Use $code-project-guidance-map to create or refresh the AGENTS.md module guidance map for this repository."

@@ -1,0 +1,20 @@
+{
+  "name": "code-project-guidance-map",
+  "interface": {
+    "displayName": "Code Project Guidance Map"
+  },
+  "plugins": [
+    {
+      "name": "code-project-guidance-map",
+      "source": {
+        "source": "local",
+        "path": "./plugins/code-project-guidance-map"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

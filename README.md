@@ -1,97 +1,99 @@
 # Code Project Guidance Map
 
-Code Project Guidance Map 是一个 Codex plugin + skill，用来让 Codex 在进入一个项目后更快理解代码结构，并把这份理解沉淀到项目根目录的 `AGENTS.md`。
+[中文说明](README-CN.md)
 
-它的主旨不是生成一大篇泛泛的项目文档，而是为 Codex 提供一份短、稳、可持续刷新的“代码模块导航图”：每个模块写清楚能做什么、应该放什么、内部大概是什么结构。后续 Codex 线程会自动读取 `AGENTS.md`，这份模块导航就会变成项目的长期上下文。
+Code Project Guidance Map is a Codex plugin and skill that helps Codex understand a repository faster and preserve that understanding in the repository root `AGENTS.md`.
 
-## 背景
+Its purpose is not to generate broad project documentation. It creates a compact, durable, refreshable code module guidance map for Codex: each module explains what it can do, what belongs there, and how it is roughly structured. Future Codex sessions can read `AGENTS.md` automatically, so the module map becomes reusable project context.
 
-这个插件来自 Codex 仓库中的 feature request：[Feature request: Add a standardized code audit module for modular codebases #26007](https://github.com/openai/codex/issues/26007)。
+## Background
 
-该 issue 希望 Codex 能为模块化代码库生成并维护标准化的 code audit module，让后续 agent 不必每次都从零重新阅读大量源码。由于这个 feature request 目前仍处于 Open 状态，且暂未看到 assignee、project、milestone 或关联开发 PR，这里先把它单独做成一个可安装的 Codex plugin，用插件方式验证这条工作流是否真正有用。
+This plugin comes from the Codex repository feature request: [Feature request: Add a standardized code audit module for modular codebases #26007](https://github.com/openai/codex/issues/26007).
 
-## 它是做什么的
+That issue asks Codex to generate and maintain a standardized code audit module for modular codebases, so later agents do not need to reread large parts of the source tree from scratch. Because the feature request is still open and does not currently show an assignee, project, milestone, or linked implementation PR, this repository implements the workflow as a standalone Codex plugin first.
 
-当你在目标项目里调用这个 skill 时，它会：
+## What It Does
 
-- 检查项目根目录是否存在 `AGENTS.md`。
-- 检查 `AGENTS.md` 中是否已有本 skill 生成的固定区块。
-- 如果没有区块，询问是否需要阅读项目并生成模块指引。
-- 如果已有区块，读取上次生成时间，并根据 Git 变化增量刷新受影响模块。
-- 只更新 marker 区块内部内容，保留 `AGENTS.md` 中其他人工维护内容。
+When you invoke this skill in a target repository, it will:
 
-固定 marker 如下：
+- Check whether the repository root has an `AGENTS.md`.
+- Check whether `AGENTS.md` already contains this skill's generated marker block.
+- Ask whether Codex should read the project and generate the guide when the block is missing.
+- Read the previous generation time and incrementally refresh affected modules when the block already exists.
+- Update only the content inside the marker block while preserving all human-written `AGENTS.md` content outside it.
+
+The fixed marker block is:
 
 ```markdown
 <!-- code-project-guidance-map:start -->
 <!-- code-project-guidance-map:end -->
 ```
 
-每个模块会输出三条中文信息：
+Each module entry contains three concise Chinese fields:
 
-- `模块能力`: 这个模块提供什么能力。
-- `模块作用`: 什么内容应该写在这个模块里。
-- `模块描述`: 这个模块的大概内部结构。
+- `模块能力`: what capability the module provides.
+- `模块作用`: what code belongs in the module.
+- `模块描述`: the module's rough internal structure.
 
-## 快速启动
+## Quick Start
 
-克隆这个仓库：
+Clone this repository:
 
 ```powershell
 git clone <repo-url>
 cd Code-Project-Guidance-Map-Skills
 ```
 
-把当前仓库注册为 Codex plugin marketplace：
+Register this repository as a Codex plugin marketplace:
 
 ```powershell
 codex plugin marketplace add <absolute-path-to-this-repo>
 ```
 
-从这个 marketplace 安装插件：
+Install the plugin from that marketplace:
 
 ```powershell
 codex plugin add code-project-guidance-map@code-project-guidance-map
 ```
 
-Windows 示例：
+Windows example:
 
 ```powershell
 codex plugin marketplace add D:\work\Code-Project-Guidance-Map-Skills
 codex plugin add code-project-guidance-map@code-project-guidance-map
 ```
 
-安装后，在你想生成代码指引的项目中新开一个 Codex 线程，然后输入：
+After installation, open a new Codex thread in the project you want to document and invoke:
 
 ```text
 Use $code-project-guidance-map to create or refresh the AGENTS.md module guidance map for this repository.
 ```
 
-## 如何使用
+## Usage
 
-第一次让 Codex 阅读项目并生成指引：
+Generate the guide when Codex first joins a project:
 
 ```text
 Use $code-project-guidance-map to create the AGENTS.md module guidance map.
 ```
 
-项目结构有明显变化后刷新指引：
+Refresh the guide after meaningful structure changes:
 
 ```text
 Use $code-project-guidance-map to refresh the module guide based on recent Git changes.
 ```
 
-做较大功能前，先让 Codex 对齐模块边界：
+Use the guide before larger feature work:
 
 ```text
 Use $code-project-guidance-map, then help me identify where this feature should be implemented.
 ```
 
-v1 需要用户显式调用 skill。它不会承诺在 Codex “刚进入项目的一瞬间”自动弹窗，但生成后的 `AGENTS.md` 会被后续 Codex 线程自动读取，所以实际效果是把第一次阅读项目的成本沉淀下来。
+v1 requires explicit user invocation. It does not promise an automatic popup the instant Codex enters a project, but once the guide is generated, later Codex sessions can read `AGENTS.md` automatically.
 
-## 会产生什么效果
+## Result
 
-成功运行后，目标项目的 `AGENTS.md` 会出现类似下面的区块：
+After a successful run, the target repository gets an `AGENTS.md` block like this:
 
 ```markdown
 <!-- code-project-guidance-map:start -->
@@ -109,37 +111,37 @@ Git baseline: abc1234
 <!-- code-project-guidance-map:end -->
 ```
 
-这能帮助 Codex 更快回答这些问题：
+This helps Codex answer questions such as:
 
-- 新功能应该写在哪里？
-- 某个行为由哪个模块负责？
-- 哪些文件变化会影响某个模块？
-- 修改前应该先阅读哪些目录？
+- Where should a new feature be implemented?
+- Which module owns a behavior?
+- Which file changes affect a module?
+- Which directories should be read before editing?
 
-## 分发给别人使用
+## Distribution
 
-这个仓库已经包含可分发的 plugin 包：
+This repository already contains a distributable plugin package:
 
-- 开发用 skill: `.agents/skills/code-project-guidance-map/`
-- 可安装 plugin: `plugins/code-project-guidance-map/`
-- plugin manifest: `plugins/code-project-guidance-map/.codex-plugin/plugin.json`
-- 本地 marketplace: `.agents/plugins/marketplace.json`
+- Development skill: `.agents/skills/code-project-guidance-map/`
+- Installable plugin: `plugins/code-project-guidance-map/`
+- Plugin manifest: `plugins/code-project-guidance-map/.codex-plugin/plugin.json`
+- Local marketplace: `.agents/plugins/marketplace.json`
 
-别人要安装时，需要拿到这个仓库，然后执行：
+To install the plugin, users need access to this repository and then run:
 
 ```powershell
 codex plugin marketplace add <absolute-path-to-this-repo>
 codex plugin add code-project-guidance-map@code-project-guidance-map
 ```
 
-如果你要把它放到团队内部 marketplace，核心动作是：
+To publish it through a team marketplace:
 
-1. 把这个仓库发布到团队可访问的位置，比如 GitHub、内部 Git 或共享目录。
-2. 保留 `plugins/code-project-guidance-map/.codex-plugin/plugin.json`。
-3. 保留 `.agents/plugins/marketplace.json`，其中 marketplace 名称为 `code-project-guidance-map`。
-4. 告诉使用者先添加 marketplace，再安装 `code-project-guidance-map@code-project-guidance-map`。
+1. Publish this repository somewhere the team can access, such as GitHub, an internal Git server, or a shared directory.
+2. Keep `plugins/code-project-guidance-map/.codex-plugin/plugin.json`.
+3. Keep `.agents/plugins/marketplace.json`; its marketplace name is `code-project-guidance-map`.
+4. Tell users to add the marketplace first and then install `code-project-guidance-map@code-project-guidance-map`.
 
-## 目录结构
+## Repository Layout
 
 ```text
 .
@@ -158,9 +160,9 @@ codex plugin add code-project-guidance-map@code-project-guidance-map
             └── code-project-guidance-map/
 ```
 
-## 开发和验证
+## Development And Validation
 
-修改 skill 或 plugin 后，建议运行：
+After changing the skill or plugin, run:
 
 ```powershell
 python .agents\skills\code-project-guidance-map\scripts\test_guidance_map.py
@@ -170,26 +172,26 @@ python <codex-checkout>\codex-rs\skills\src\assets\samples\skill-creator\scripts
 python <plugin-creator-skill>\scripts\validate_plugin.py plugins\code-project-guidance-map
 ```
 
-本机开发时，如果插件已经安装过，改完后重新安装：
+If the plugin is already installed locally, reinstall it after changes:
 
 ```powershell
 codex plugin add code-project-guidance-map@code-project-guidance-map
 ```
 
-然后新开 Codex 线程，让 Codex 重新加载插件。
+Then start a new Codex thread so Codex loads the updated plugin.
 
-## Coworker 提交约定
+## Coworker Commit Convention
 
-当 Codex 实质参与了代码、文档或插件行为的修改，提交信息里应该把 Codex 作为 coworker 标记出来：
+When Codex materially contributes code, docs, or plugin behavior, include Codex as a coworker in the commit trailer:
 
 ```text
 Co-authored-by: OpenAI Codex <codex@openai.com>
 ```
 
-这表示该提交来自人工和 Codex 的协作。
+This makes it clear that the change came from human and Codex collaboration.
 
-## 项目主旨
+## Project Intent
 
-这个项目的目标是让 Codex 从“临时读代码”变成“有项目记忆地协作”。
+This project aims to move Codex from temporary source reading toward reusable project memory.
 
-通过把模块边界、模块职责和放置规则写入 `AGENTS.md`，Codex 后续在同一个项目里工作时，可以更快定位代码、更少猜测模块职责，并更稳定地参与需求实现、重构和代码审查。
+By writing module boundaries, responsibilities, and placement rules into `AGENTS.md`, later Codex sessions can locate code faster, guess less about module ownership, and participate more reliably in feature work, refactoring, and code review.

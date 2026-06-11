@@ -174,12 +174,16 @@ codex plugin add code-project-guidance-map@code-project-guidance-map
 
 ```text
 .
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 ├── .agents/
 │   ├── plugins/
 │   │   └── marketplace.json
 │   └── skills/
 │       └── code-project-guidance-map/
 ├── docs/
+│   ├── ci.md
 │   └── codex-skills-research.md
 ├── scripts/
 │   ├── sync_plugin_skill.py
@@ -217,6 +221,8 @@ python <codex-checkout>\codex-rs\skills\src\assets\samples\skill-creator\scripts
 python <codex-checkout>\codex-rs\skills\src\assets\samples\skill-creator\scripts\quick_validate.py plugins\code-project-guidance-map\skills\code-project-guidance-map
 python <plugin-creator-skill>\scripts\validate_plugin.py plugins\code-project-guidance-map
 ```
+
+GitHub Actions 和目标项目 `verify` CI 接入方式见 [docs/ci.md](docs/ci.md)。
 
 本机开发时，如果插件已经安装过，改完后重新安装：
 

@@ -35,12 +35,22 @@ Do not rewrite content outside the marker block.
 python <skill-dir>/scripts/guidance_map.py status --repo <repo-root>
 ```
 
+Then classify freshness and refresh scope with:
+
+```bash
+python <skill-dir>/scripts/guidance_map.py verify --repo <repo-root>
+```
+
 3. If `AGENTS.md` is missing or has no guidance block, ask the user whether to read the project and generate the guide. If the user already explicitly requested generation or refresh, treat that as consent and continue.
 
 4. If a guidance block exists:
    - Read its `Generated at` timestamp and `sha256:v1` signature metadata.
-   - Use the script status JSON to inspect Git changes since that timestamp, including committed, staged, unstaged, and untracked files.
+   - Use the script `verify` JSON to inspect Git changes since that timestamp, including committed, staged, unstaged, and untracked files.
    - If the timestamp is missing or invalid, or if the signature is missing or invalid, perform a full project read.
+   - If `recommended_action` is `refresh_dependency_rules`, re-evaluate `Module Dependency Rules` plus affected module entries.
+   - If `recommended_action` is `refresh_task_routing_and_affected_modules`, refresh task routing guidance and affected module entries without re-reading unrelated modules.
+   - If `recommended_action` is `refresh_affected_modules`, re-read only affected modules.
+   - If `recommended_action` is `none`, report that the guide is current unless the user explicitly asks for a full refresh.
    - If there are no changes, report that the guide is already current unless the user explicitly asks for a full refresh.
    - If changes exist, do an incremental read focused on affected modules and preserve unchanged module entries.
 
@@ -116,7 +126,10 @@ Keep every module entry compact. Prefer one line per field. Avoid implementation
 
 ## Incremental Update Rules
 
-- Treat the script's `changed_files` list as the update scope.
+- Treat the script's `verify.changed_files`, `change_impact`, and `recommended_action` as the update scope.
+- Do not re-evaluate `Module Dependency Rules` for ordinary module-internal changes.
+- Re-evaluate `Module Dependency Rules` only when `change_impact.boundary_rules` is non-empty or marker metadata/signature is invalid.
+- Refresh task-routing guidance when `change_impact.task_routing` is non-empty.
 - Map changed files back to existing module entries when possible.
 - Re-read only affected modules unless the changed files indicate a project-wide restructure.
 - Preserve unchanged module entries verbatim when they still match the current project.

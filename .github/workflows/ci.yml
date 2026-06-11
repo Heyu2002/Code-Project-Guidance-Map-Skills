@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check skill sync
+        run: python scripts/sync_plugin_skill.py --check
+
+      - name: Test sync tooling
+        run: python scripts/test_sync_plugin_skill.py
+
+      - name: Test development skill helper
+        run: python .agents/skills/code-project-guidance-map/scripts/test_guidance_map.py
+
+      - name: Test plugin skill helper
+        run: python plugins/code-project-guidance-map/skills/code-project-guidance-map/scripts/test_guidance_map.py
+
+      - name: Validate plugin manifest JSON
+        run: python -m json.tool plugins/code-project-guidance-map/.codex-plugin/plugin.json

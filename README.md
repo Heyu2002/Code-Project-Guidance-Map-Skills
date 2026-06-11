@@ -174,12 +174,16 @@ To publish it through a team marketplace:
 
 ```text
 .
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 ├── .agents/
 │   ├── plugins/
 │   │   └── marketplace.json
 │   └── skills/
 │       └── code-project-guidance-map/
 ├── docs/
+│   ├── ci.md
 │   └── codex-skills-research.md
 ├── scripts/
 │   ├── sync_plugin_skill.py
@@ -217,6 +221,8 @@ python <codex-checkout>\codex-rs\skills\src\assets\samples\skill-creator\scripts
 python <codex-checkout>\codex-rs\skills\src\assets\samples\skill-creator\scripts\quick_validate.py plugins\code-project-guidance-map\skills\code-project-guidance-map
 python <plugin-creator-skill>\scripts\validate_plugin.py plugins\code-project-guidance-map
 ```
+
+See [docs/ci.md](docs/ci.md) for GitHub Actions and target-project `verify` CI guidance.
 
 If the plugin is already installed locally, reinstall it after changes:
 

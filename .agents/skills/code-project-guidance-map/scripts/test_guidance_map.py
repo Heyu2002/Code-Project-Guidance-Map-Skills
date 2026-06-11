@@ -96,6 +96,29 @@ class GuidanceMapTests(unittest.TestCase):
         self.assertEqual(result["current_head"], "none")
         self.assertEqual(result["changed_files"], [])
 
+    def test_classify_changed_files_by_refresh_scope(self) -> None:
+        impact = guidance_map.classify_changed_files(
+            [
+                "pom.xml",
+                "src/main/java/app/controller/UserController.java",
+                "src/main/java/app/model/User.java",
+                "docs/notes.md",
+                ".github/workflows/ci.yml",
+                "unknown.file",
+            ]
+        )
+        self.assertEqual(impact["boundary_rules"], ["pom.xml"])
+        self.assertEqual(impact["task_routing"], ["src/main/java/app/controller/UserController.java"])
+        self.assertEqual(impact["module_internal"], ["src/main/java/app/model/User.java"])
+        self.assertEqual(impact["docs_only"], ["docs/notes.md", ".github/workflows/ci.yml"])
+        self.assertEqual(impact["other"], ["unknown.file"])
+
+    def test_verify_missing_block_requires_full_refresh(self) -> None:
+        result = guidance_map.verify(self.repo)
+        self.assertEqual(result["severity"], "error")
+        self.assertEqual(result["recommended_action"], "full_refresh")
+        self.assertTrue(result["stale"])
+
     def test_malformed_markers_raise(self) -> None:
         text = f"{guidance_map.START_MARKER}\nmissing end"
         with self.assertRaises(guidance_map.GuidanceMapError):
@@ -126,6 +149,12 @@ class GuidanceMapGitTests(unittest.TestCase):
             check=True,
         )
 
+    def commit_guide(self) -> None:
+        block = guidance_map.render_block("### App\n\n- Module Capability: A", "2030-01-01T00:00:00Z", "abc123")
+        (self.repo / "AGENTS.md").write_text(block, encoding="utf-8")
+        self.git("add", "AGENTS.md")
+        self.git("commit", "-m", "guide")
+
     def test_changed_files_include_committed_staged_unstaged_and_untracked(self) -> None:
         (self.repo / "new_commit.txt").write_text("new\n", encoding="utf-8")
         self.git("add", "new_commit.txt")
@@ -153,6 +182,44 @@ class GuidanceMapGitTests(unittest.TestCase):
         result = guidance_map.status(self.repo)
         self.assertEqual(result["changed_files"], [])
 
+    def test_verify_boundary_sensitive_changes_refresh_dependency_rules(self) -> None:
+        self.commit_guide()
+        (self.repo / "pom.xml").write_text("<project />\n", encoding="utf-8")
+        result = guidance_map.verify(self.repo)
+        self.assertEqual(result["recommended_action"], "refresh_dependency_rules")
+        self.assertTrue(result["stale"])
+        self.assertEqual(result["change_impact"]["boundary_rules"], ["pom.xml"])
+
+    def test_verify_task_routing_changes_refresh_routing(self) -> None:
+        self.commit_guide()
+        path = self.repo / "src/main/java/app/controller/UserController.java"
+        path.parent.mkdir(parents=True)
+        path.write_text("class UserController {}\n", encoding="utf-8")
+        result = guidance_map.verify(self.repo)
+        self.assertEqual(result["recommended_action"], "refresh_task_routing_and_affected_modules")
+        self.assertTrue(result["stale"])
+        self.assertEqual(result["change_impact"]["task_routing"], ["src/main/java/app/controller/UserController.java"])
+
+    def test_verify_module_internal_changes_refresh_affected_modules(self) -> None:
+        self.commit_guide()
+        path = self.repo / "src/main/java/app/model/User.java"
+        path.parent.mkdir(parents=True)
+        path.write_text("class User {}\n", encoding="utf-8")
+        result = guidance_map.verify(self.repo)
+        self.assertEqual(result["recommended_action"], "refresh_affected_modules")
+        self.assertTrue(result["stale"])
+        self.assertEqual(result["change_impact"]["module_internal"], ["src/main/java/app/model/User.java"])
+
+    def test_verify_docs_only_changes_do_not_mark_stale(self) -> None:
+        self.commit_guide()
+        path = self.repo / "docs/notes.md"
+        path.parent.mkdir(parents=True)
+        path.write_text("# notes\n", encoding="utf-8")
+        result = guidance_map.verify(self.repo)
+        self.assertEqual(result["recommended_action"], "none")
+        self.assertFalse(result["stale"])
+        self.assertEqual(result["severity"], "info")
+
 
 class GuidanceMapCliTests(unittest.TestCase):
     def test_status_cli_outputs_json(self) -> None:
@@ -167,6 +234,20 @@ class GuidanceMapCliTests(unittest.TestCase):
             )
             parsed = json.loads(result.stdout)
             self.assertIn("repo_root", parsed)
+
+    def test_verify_cli_can_fail_on_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            script = Path(guidance_map.__file__).resolve()
+            result = subprocess.run(
+                [sys.executable, str(script), "verify", "--repo", tmp, "--fail-on", "error"],
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            parsed = json.loads(result.stdout)
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(parsed["recommended_action"], "full_refresh")
 
 
 if __name__ == "__main__":

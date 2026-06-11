@@ -1,6 +1,6 @@
 {
   "name": "code-project-guidance-map",
-  "version": "0.1.0",
+  "version": "0.1.0+codex.20260611053416",
   "description": "Create and refresh concise AGENTS.md module guidance maps for Codex projects.",
   "author": {
     "name": "Heyu2002"

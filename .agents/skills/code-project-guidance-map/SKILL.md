@@ -1,6 +1,6 @@
 ---
 name: code-project-guidance-map
-description: Create or refresh a structured code module guidance map in AGENTS.md for a repository. Use when the user asks Codex to read a project, map the code structure, document module responsibilities, initialize project guidance, refresh an AGENTS.md project guide, or keep a concise module guide up to date from Git changes.
+description: Create or refresh a structured code module guidance map in AGENTS.md for a repository. Use when the user asks Codex to read a project, map code structure, document module responsibilities, initialize project guidance, refresh an AGENTS.md project guide, or keep a concise module guide up to date from Git changes. When invoked, the main agent must decide macro module boundaries first, then use explicitly authorized subagents for bounded module-internal exploration when available.
 ---
 
 # Code Project Guidance Map
@@ -44,21 +44,31 @@ python <skill-dir>/scripts/guidance_map.py status --repo <repo-root>
    - If there are no changes, report that the guide is already current unless the user explicitly asks for a full refresh.
    - If changes exist, do an incremental read focused on affected modules and preserve unchanged module entries.
 
-5. Analyze module boundaries.
-   - Prefer using subagents when the tool is available: delegate module-boundary and module-summary analysis for the project or affected files.
-   - If subagents are unavailable, perform the same analysis yourself.
-   - Let the analysis decide module boundaries from actual code structure. Do not force a top-level-only or all-directories scheme.
+5. Decide the macro module map before delegation.
+   - The main agent owns the global module map: choose concise module names, group paths into modules, decide whether the run is full or incremental, and define bounded scopes for any subagents.
+   - Do not spawn subagents until this draft macro map exists.
+   - Do not delegate the global module-boundary decision.
+   - Let the actual code structure drive module boundaries. Do not force a top-level-only or all-directories scheme.
 
-6. Write a concise English guide optimized for human readability.
+6. Delegate module-internal exploration after authorization.
+   - Treat any user prompt or default prompt that says `use subagents`, `delegate`, `parallel agents`, or equivalent as explicit authorization. Do not ask again.
+   - If the user did not explicitly authorize subagents and the project needs non-trivial reading, ask one concise yes/no question before spawning: `Use subagents for module-internal exploration?`
+   - When authorized and a subagent/delegation tool is available, spawn the smallest useful set of explorer subagents after step 5.
+   - Give each subagent a module name, bounded path scope, relevant changed files if any, and ask for: key files/directories, module capability evidence, responsibility boundaries, internal structure, and uncertainty.
+   - Subagents must not edit files, update `AGENTS.md`, or decide the global module map.
+   - The main agent integrates subagent findings and writes the final guide.
+   - If subagents are unavailable or not authorized, perform the same internal exploration locally and mention that fallback in the final response.
+
+7. Write a concise English guide optimized for human readability.
    - Use a short, human-friendly module name as the `###` heading. Do not put long paths in the heading.
    - Put paths in `Module Path` as a separate field.
    - Use `Module Contains` with a small fenced `text` tree or list for the main directories/files included in the module.
    - Each module must include exactly these analysis fields:
-   - `Module Capability`: what capability the module provides.
-   - `Module Responsibility`: what belongs in this module.
-   - `Module Structure`: the module's rough internal structure.
+     - `Module Capability`: what capability the module provides.
+     - `Module Responsibility`: what belongs in this module.
+     - `Module Structure`: the module's rough internal structure.
 
-7. Save the guide body to a temporary file, then update `AGENTS.md` with:
+8. Save the guide body to a temporary file, then update `AGENTS.md` with:
 
 ```bash
 python <skill-dir>/scripts/guidance_map.py update --repo <repo-root> --guidance-file <temp-guidance.md>
@@ -121,4 +131,4 @@ After updating a guide:
 
 1. Re-run `status` to confirm `has_block` is true.
 2. Verify `AGENTS.md` still contains any pre-existing content outside the marker block.
-3. Summarize whether the run was full or incremental, how many modules were documented, and which changed files drove an incremental update.
+3. Summarize whether the run was full or incremental, whether subagents were used or why the workflow fell back to local exploration, how many modules were documented, and which changed files drove an incremental update.

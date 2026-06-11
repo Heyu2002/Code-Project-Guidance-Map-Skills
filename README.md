@@ -22,6 +22,7 @@ When you invoke this skill in a target repository, it will:
 - Check whether `AGENTS.md` already contains this skill's generated marker block.
 - Ask whether Codex should read the project and generate the guide when the block is missing.
 - Read the previous generation time and incrementally refresh affected modules when the block already exists.
+- Keep macro module boundary decisions in the main agent while using explicitly authorized subagents for module-internal exploration.
 - Store a parseable `sha256:v1` signature and force a full refresh if generated metadata or signed content no longer verifies.
 - Update only the content inside the marker block while preserving all human-written `AGENTS.md` content outside it.
 
@@ -71,7 +72,7 @@ codex plugin add code-project-guidance-map@code-project-guidance-map
 After installation, open a new Codex thread in the project you want to document and invoke:
 
 ```text
-Use $code-project-guidance-map to create or refresh the AGENTS.md module guidance map for this repository.
+Use $code-project-guidance-map to create or refresh this repository's AGENTS.md module guidance map. I explicitly authorize subagents for this run. First decide the macro module boundaries in the main agent, then spawn subagents for bounded module-internal exploration when a subagent tool is available; do not ask again for subagent approval. If subagents are unavailable, continue locally and report the fallback.
 ```
 
 ## Usage
@@ -79,13 +80,13 @@ Use $code-project-guidance-map to create or refresh the AGENTS.md module guidanc
 Generate the guide when Codex first joins a project:
 
 ```text
-Use $code-project-guidance-map to create the AGENTS.md module guidance map.
+Use $code-project-guidance-map to create the AGENTS.md module guidance map. I explicitly authorize subagents for this run. First decide the macro module boundaries in the main agent, then spawn subagents for bounded module-internal exploration when a subagent tool is available; do not ask again for subagent approval. If subagents are unavailable, continue locally and report the fallback.
 ```
 
 Refresh the guide after meaningful structure changes:
 
 ```text
-Use $code-project-guidance-map to refresh the module guide based on recent Git changes.
+Use $code-project-guidance-map to refresh the module guide based on recent Git changes. I explicitly authorize subagents for this run. First decide the macro module boundaries in the main agent, then spawn subagents for bounded module-internal exploration when a subagent tool is available; do not ask again for subagent approval. If subagents are unavailable, continue locally and report the fallback.
 ```
 
 Use the guide before larger feature work:
@@ -95,6 +96,8 @@ Use $code-project-guidance-map, then help me identify where this feature should 
 ```
 
 v1 requires explicit user invocation. It does not promise an automatic popup the instant Codex enters a project, but once the guide is generated, later Codex sessions can read `AGENTS.md` automatically.
+
+Subagents are explicit. The recommended prompts above authorize them up front, so Codex should not stop to ask again. The main agent first drafts the macro module map, then spawns the smallest useful set of subagents with bounded path scopes for internal structure and evidence. Subagents must not edit files or decide the global module map. If subagent tools are unavailable, the main agent completes the same exploration locally and reports the fallback.
 
 ## Result
 

@@ -1,4 +1,4 @@
 interface:
   display_name: "Code Project Guidance Map"
   short_description: "Create AGENTS.md module guidance maps"
-  default_prompt: "Use $code-project-guidance-map to create or refresh the AGENTS.md module guidance map for this repository."
+  default_prompt: "Use $code-project-guidance-map to create or refresh this repository's AGENTS.md module guidance map. I explicitly authorize subagents for this run. First decide the macro module boundaries in the main agent, then spawn subagents for bounded module-internal exploration when a subagent tool is available; do not ask again for subagent approval. If subagents are unavailable, continue locally and report the fallback."

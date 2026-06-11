@@ -16,7 +16,7 @@
   "interface": {
     "displayName": "Code Project Guidance Map",
     "shortDescription": "Create AGENTS.md module guidance maps.",
-    "longDescription": "Builds and refreshes marker-delimited AGENTS.md guidance that summarizes project modules with capability, placement guidance, and concise structure notes.",
+    "longDescription": "Builds and refreshes marker-delimited AGENTS.md guidance that summarizes project modules. The main agent decides macro module boundaries, while explicitly authorized subagents can inspect module internals for evidence, contained paths, and structure notes.",
     "developerName": "Heyu2002",
     "category": "Productivity",
     "capabilities": [
@@ -25,7 +25,7 @@
       "Codebase analysis"
     ],
     "defaultPrompt": [
-      "Use $code-project-guidance-map to refresh this project's AGENTS.md module guide."
+      "Use $code-project-guidance-map to create or refresh this repository's AGENTS.md module guidance map. I explicitly authorize subagents for this run. First decide the macro module boundaries in the main agent, then spawn subagents for bounded module-internal exploration when a subagent tool is available; do not ask again for subagent approval. If subagents are unavailable, continue locally and report the fallback."
     ]
   }
 }

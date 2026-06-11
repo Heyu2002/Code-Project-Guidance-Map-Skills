@@ -206,7 +206,7 @@ $CODEX_HOME/skills/code-project-guidance-map/
 
 Inputs needed before implementation:
 
-- Objective: create or refresh a concise `AGENTS.md` module guidance map.
+- Objective: create or refresh a concise `AGENTS.md` project editing action map.
 - Invocation model: explicit user invocation; no automatic project-entry hook in v1.
-- Output artifact: a marker-delimited `AGENTS.md` block with module capability, role, and description entries.
+- Output artifact: a marker-delimited `AGENTS.md` block with editing rules, task routing, dependency rules, and module ownership entries.
 - Script-backed behavior: marker parsing, Git delta detection, and safe `AGENTS.md` block replacement.

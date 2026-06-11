@@ -22,22 +22,30 @@ class GuidanceMapTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
-    def write_guidance(
-        self,
-        text: str = (
-            "### App\n\n"
+    def guidance_text(self, owns: str = "A") -> str:
+        return (
+            "### Agent Editing Rules\n\n"
+            "- [MUST] Keep App changes inside `app` unless routing says otherwise.\n"
+            "- [SHOULD] Reuse existing services before adding orchestration.\n\n"
+            "### Task Routing\n\n"
+            "- To add an API: edit `app/routes`; keep behavior in `app/services`.\n\n"
+            "### Module Dependency Rules\n\n"
+            "- `app` owns application behavior and may depend on shared utilities.\n\n"
+            "### Module Map\n\n"
+            "#### App\n\n"
             "- Module Path: `app`\n"
-            "- Module Capability: A\n"
-            "- Module Responsibility: B\n"
-            "- Module Structure: C\n"
-            "- Module Contains:\n\n"
+            f"- Owns: {owns}\n"
+            "- Change here when: B\n"
+            "- Do not put here: C\n"
+            "- Key entry points:\n\n"
             "```text\n"
             "app/\n"
             "```\n"
-        ),
-    ) -> Path:
+        )
+
+    def write_guidance(self, text: str | None = None) -> Path:
         path = self.repo / "guidance.md"
-        path.write_text(text, encoding="utf-8")
+        path.write_text(text or self.guidance_text(), encoding="utf-8")
         return path
 
     def test_update_creates_agents_when_missing(self) -> None:
@@ -46,9 +54,10 @@ class GuidanceMapTests(unittest.TestCase):
         self.assertTrue(result["has_block"])
         self.assertIn(guidance_map.START_MARKER, text)
         self.assertIn("Generator: code-project-guidance-map", text)
+        self.assertIn("Guide format: action-map:v2", text)
         self.assertIn("Signature algorithm: sha256:v1", text)
         self.assertRegex(text, r"Signature: sha256:[0-9a-f]{64}")
-        self.assertIn("- Module Capability: A", text)
+        self.assertIn("- Owns: A", text)
 
     def test_status_validates_signature(self) -> None:
         guidance_map.update(self.repo, self.write_guidance(), "2026-01-01T00:00:00Z")
@@ -57,7 +66,7 @@ class GuidanceMapTests(unittest.TestCase):
         self.assertFalse(result["requires_full_read"])
 
         agents_path = self.repo / "AGENTS.md"
-        text = agents_path.read_text(encoding="utf-8").replace("Module Capability: A", "Module Capability: changed")
+        text = agents_path.read_text(encoding="utf-8").replace("Owns: A", "Owns: changed")
         agents_path.write_text(text, encoding="utf-8")
         tampered = guidance_map.status(self.repo)
         self.assertFalse(tampered["signature_valid"])
@@ -73,7 +82,7 @@ class GuidanceMapTests(unittest.TestCase):
     def test_update_replaces_block_and_preserves_outside_content(self) -> None:
         old_block = guidance_map.render_block("old", "2025-01-01T00:00:00Z", "abc123")
         (self.repo / "AGENTS.md").write_text(f"before\n\n{old_block}\nafter\n", encoding="utf-8")
-        guidance_map.update(self.repo, self.write_guidance("new"), "2026-01-01T00:00:00Z")
+        guidance_map.update(self.repo, self.write_guidance(self.guidance_text("new")), "2026-01-01T00:00:00Z")
         text = (self.repo / "AGENTS.md").read_text(encoding="utf-8")
         self.assertIn("before", text)
         self.assertIn("after", text)
@@ -89,6 +98,40 @@ class GuidanceMapTests(unittest.TestCase):
         self.assertTrue(result["has_block"])
         self.assertFalse(result["generated_at_valid"])
         self.assertTrue(result["requires_full_read"])
+
+    def test_status_reports_unsupported_guide_format(self) -> None:
+        block = guidance_map.render_block("body", "2026-01-01T00:00:00Z", "abc123")
+        block = block.replace("Guide format: action-map:v2\n", "")
+        (self.repo / "AGENTS.md").write_text(block, encoding="utf-8")
+        result = guidance_map.status(self.repo)
+        self.assertTrue(result["has_block"])
+        self.assertFalse(result["guide_format_valid"])
+        self.assertTrue(result["requires_full_read"])
+
+    def test_update_rejects_missing_required_sections(self) -> None:
+        path = self.write_guidance("### Module Map\n\n#### App\n\n- Module Path: `app`\n")
+        with self.assertRaises(guidance_map.GuidanceMapError):
+            guidance_map.update(self.repo, path, "2026-01-01T00:00:00Z")
+
+    def test_update_rejects_required_sections_out_of_order(self) -> None:
+        text = (
+            "### Task Routing\n\n"
+            "- To add an API: edit `app/routes`.\n\n"
+            "### Agent Editing Rules\n\n"
+            "- [MUST] Keep App changes inside `app` unless routing says otherwise.\n\n"
+            "### Module Dependency Rules\n\n"
+            "- `app` owns application behavior and may depend on shared utilities.\n\n"
+            "### Module Map\n\n"
+            "#### App\n\n"
+            "- Module Path: `app`\n"
+            "- Owns: A\n"
+            "- Change here when: B\n"
+            "- Do not put here: C\n"
+            "- Key entry points: `app/`\n"
+        )
+        path = self.write_guidance(text)
+        with self.assertRaises(guidance_map.GuidanceMapError):
+            guidance_map.update(self.repo, path, "2026-01-01T00:00:00Z")
 
     def test_status_handles_non_git_project(self) -> None:
         result = guidance_map.status(self.repo)
@@ -150,7 +193,22 @@ class GuidanceMapGitTests(unittest.TestCase):
         )
 
     def commit_guide(self) -> None:
-        block = guidance_map.render_block("### App\n\n- Module Capability: A", "2030-01-01T00:00:00Z", "abc123")
+        body = (
+            "### Agent Editing Rules\n\n"
+            "- [MUST] Keep App changes inside `app`.\n\n"
+            "### Task Routing\n\n"
+            "- To add an API: edit `app/routes`.\n\n"
+            "### Module Dependency Rules\n\n"
+            "- `app` owns application behavior.\n\n"
+            "### Module Map\n\n"
+            "#### App\n\n"
+            "- Module Path: `app`\n"
+            "- Owns: Application behavior.\n"
+            "- Change here when: Application behavior changes.\n"
+            "- Do not put here: Shared utilities.\n"
+            "- Key entry points: `app/`\n"
+        )
+        block = guidance_map.render_block(body, "2030-01-01T00:00:00Z", "abc123")
         (self.repo / "AGENTS.md").write_text(block, encoding="utf-8")
         self.git("add", "AGENTS.md")
         self.git("commit", "-m", "guide")

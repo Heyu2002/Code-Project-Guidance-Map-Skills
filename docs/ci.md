@@ -22,7 +22,7 @@ Target projects can use the skill helper as a lightweight freshness check:
 python <installed-skill>\scripts\guidance_map.py verify --repo . --fail-on error
 ```
 
-This fails only when the guidance block is missing, malformed, or has invalid metadata/signature.
+This fails only when the guidance block is missing, malformed, has an unsupported guide format, or has invalid metadata/signature.
 
 For stricter projects, use:
 
@@ -45,6 +45,6 @@ That also fails when changed files indicate the guidance should be refreshed.
 The goal is conservative maintenance:
 
 - Do not re-read the whole repository for ordinary module-internal changes.
-- Re-evaluate `Module Dependency Rules` only for boundary-sensitive changes.
-- Refresh task routing only when entrypoint or layer-flow files changed.
+- Re-evaluate `Agent Editing Rules` and `Module Dependency Rules` only for boundary-sensitive changes.
+- Refresh `Task Routing` only when entrypoint or layer-flow files changed.
 - Keep `AGENTS.md` compact and useful for future agent editing decisions.

@@ -4,7 +4,7 @@
 
 Code Project Guidance Map is a Codex plugin and skill that helps Codex understand a repository faster and preserve that understanding in the repository root `AGENTS.md`.
 
-Its purpose is not to generate broad project documentation. It creates a compact, durable, refreshable code module guidance map for Codex: each module explains what it can do, what belongs there, and how it is roughly structured. Future Codex sessions can read `AGENTS.md` automatically, so the module map becomes reusable project context.
+Its purpose is not to generate broad project documentation. It creates a compact, durable, refreshable action map for Codex: editing rules, task routing, dependency boundaries, and concise module ownership. Future Codex sessions can read `AGENTS.md` automatically, so the map becomes reusable project context.
 
 ## Background
 
@@ -23,7 +23,7 @@ When you invoke this skill in a target repository, it will:
 - Ask whether Codex should read the project and generate the guide when the block is missing.
 - Read the previous generation time and incrementally refresh affected modules when the block already exists.
 - Keep macro module boundary decisions in the main agent while using explicitly authorized subagents for module-internal exploration.
-- Generate a `Module Dependency Rules` section that captures project-specific dependency direction and boundary rules.
+- Generate `Agent Editing Rules`, `Task Routing`, and `Module Dependency Rules` sections that capture project-specific editing constraints, routing hints, and dependency boundaries.
 - Store a parseable `sha256:v1` signature and force a full refresh if generated metadata or signed content no longer verifies.
 - Update only the content inside the marker block while preserving all human-written `AGENTS.md` content outside it.
 
@@ -34,14 +34,17 @@ The fixed marker block is:
 <!-- code-project-guidance-map:end -->
 ```
 
-Each module entry uses a short human-readable module name as the heading, with paths and included parts shown separately:
+The generated block is action-oriented:
 
+- `Agent Editing Rules`: high-signal `[MUST]`, `[SHOULD]`, and `[AVOID]` rules that prevent likely wrong edits.
+- `Task Routing`: common changes mapped to the paths and owning modules a future Codex session should read or edit.
 - `Module Dependency Rules`: project-specific dependency direction, forbidden dependency, ownership, and layer-flow rules.
+- `Module Map`: short human-readable module names with paths shown separately.
 - `Module Path`: the primary path or path list for the module.
-- `Module Capability`: what capability the module provides.
-- `Module Responsibility`: what code belongs in the module.
-- `Module Structure`: the module's rough internal structure.
-- `Module Contains`: a compact `text` tree or list of the main directories/files in the module.
+- `Owns`: the capability or domain owned by the module.
+- `Change here when`: when future edits should land in the module.
+- `Do not put here`: responsibilities that belong elsewhere.
+- `Key entry points`: compact files or directories to read first.
 
 ## Quick Start
 
@@ -74,7 +77,7 @@ codex plugin add code-project-guidance-map@code-project-guidance-map
 After installation, open a new Codex thread in the project you want to document and invoke:
 
 ```text
-Use $code-project-guidance-map to create or refresh this repository's AGENTS.md module guidance map and Module Dependency Rules. I explicitly authorize subagents for this run. First decide the macro module boundaries in the main agent, then spawn subagents for bounded module-internal exploration when a subagent tool is available; do not ask again for subagent approval. If subagents are unavailable, continue locally and report the fallback.
+Use $code-project-guidance-map to create or refresh this repository's AGENTS.md action map, including Agent Editing Rules, Task Routing, Module Dependency Rules, and Module Map. I explicitly authorize subagents for this run. First decide the macro module boundaries in the main agent, then spawn subagents for bounded module-internal exploration when a subagent tool is available; do not ask again for subagent approval. If subagents are unavailable, continue locally and report the fallback.
 ```
 
 ## Usage
@@ -82,13 +85,13 @@ Use $code-project-guidance-map to create or refresh this repository's AGENTS.md 
 Generate the guide when Codex first joins a project:
 
 ```text
-Use $code-project-guidance-map to create the AGENTS.md module guidance map and Module Dependency Rules. I explicitly authorize subagents for this run. First decide the macro module boundaries in the main agent, then spawn subagents for bounded module-internal exploration when a subagent tool is available; do not ask again for subagent approval. If subagents are unavailable, continue locally and report the fallback.
+Use $code-project-guidance-map to create the AGENTS.md action map with Agent Editing Rules, Task Routing, Module Dependency Rules, and Module Map. I explicitly authorize subagents for this run. First decide the macro module boundaries in the main agent, then spawn subagents for bounded module-internal exploration when a subagent tool is available; do not ask again for subagent approval. If subagents are unavailable, continue locally and report the fallback.
 ```
 
 Refresh the guide after meaningful structure changes:
 
 ```text
-Use $code-project-guidance-map to refresh the module guide and Module Dependency Rules based on recent Git changes. I explicitly authorize subagents for this run. First decide the macro module boundaries in the main agent, then spawn subagents for bounded module-internal exploration when a subagent tool is available; do not ask again for subagent approval. If subagents are unavailable, continue locally and report the fallback.
+Use $code-project-guidance-map to refresh the AGENTS.md action map based on recent Git changes, including editing rules, task routing, dependency rules, and affected modules. I explicitly authorize subagents for this run. First decide the macro module boundaries in the main agent, then spawn subagents for bounded module-internal exploration when a subagent tool is available; do not ask again for subagent approval. If subagents are unavailable, continue locally and report the fallback.
 ```
 
 Use the guide before larger feature work:
@@ -110,32 +113,48 @@ After a successful run, the target repository gets an `AGENTS.md` block like thi
 ## Code Project Guidance Map
 
 Generator: code-project-guidance-map
+Guide format: action-map:v2
 Generated at: 2026-06-11T10:30:00Z
 Git baseline: abc1234
 Signature algorithm: sha256:v1
 Signature: sha256:<64 lowercase hex chars>
 
+### Agent Editing Rules
+
+- [MUST] Put new scheduling business rules in `src/core/scheduling`; expose them through API modules only after service behavior exists.
+- [MUST] Keep persistence SQL beside the owning mapper or repository path.
+- [SHOULD] Reuse existing services before adding new orchestration.
+- [AVOID] Adding business or web dependencies to shared utility modules.
+
+### Task Routing
+
+- To add a REST API: edit `src/api`; call services from `src/core` instead of duplicating business logic.
+- To change scheduling rules: edit `src/core/scheduling`; update matching tests before touching API response shape.
+- To change persistence SQL: edit `src/persistence` and matching mapper resources.
+- To change frontend-facing response shape: edit `src/api` DTOs and adapters.
+
 ### Module Dependency Rules
 
-- `common` is the lowest-level shared utility module. Do not add business or web dependencies here.
-- `core` can depend on `common` and owns platform capabilities shared by feature modules.
-- Feature modules should depend on platform services rather than runtime integration code.
-- Runtime or web integration layers own controllers, scheduled tasks, messaging, WebSocket, and application-specific orchestration.
-- Controllers should call services, services should call DAOs, and SQL mappings should stay beside the owning module's resources.
+- Shared utilities are the lowest-level code and must not depend on business, web, or persistence modules.
+- API modules call services; services own business rules; persistence modules own storage adapters and SQL.
+- Frontend-facing facades should orchestrate existing services instead of duplicating domain behavior.
+- Build/package boundary changes require re-checking this entire action map.
 
-### Core
+### Module Map
 
-- Module Path: `src/core`
-- Module Capability: Provides core business rules and domain workflows.
-- Module Responsibility: Contains reusable business logic, state transitions, and domain services.
-- Module Structure: Organized around domain models, service functions, and lightweight coordination logic.
-- Module Contains:
+#### Scheduling
+
+- Module Path: `src/core/scheduling`
+- Owns: Scheduling rules, shift rotation decisions, and scheduling-domain service behavior.
+- Change here when: A task changes how schedules are calculated, validated, or persisted through domain services.
+- Do not put here: HTTP response shaping, frontend-only DTOs, or generic shared helpers.
+- Key entry points:
 
 ```text
-src/core/
-├── models/
-├── services/
-└── index.ts
+src/core/scheduling/
+  services/
+  strategies/
+  tests/
 ```
 <!-- code-project-guidance-map:end -->
 ````

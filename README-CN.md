@@ -119,7 +119,6 @@ Guide format: action-map:v2
 Generated at: 2026-06-11T10:30:00Z
 Git baseline: abc1234
 Signature key id: repo:1a2b3c4d5e6f7890
-Signature algorithm: hmac-sha256:v2
 Signature: hmac-sha256:<64 lowercase hex chars>
 
 ### Agent Editing Rules

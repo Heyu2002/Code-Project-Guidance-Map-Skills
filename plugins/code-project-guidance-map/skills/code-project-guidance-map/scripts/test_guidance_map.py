@@ -78,7 +78,7 @@ class GuidanceMapTests(unittest.TestCase):
         self.assertIn("Generator: code-project-guidance-map", text)
         self.assertIn("Guide format: action-map:v2", text)
         self.assertIn("Signature key id: repo:", text)
-        self.assertIn("Signature algorithm: hmac-sha256:v2", text)
+        self.assertNotIn("Signature algorithm:", text)
         self.assertRegex(text, r"Signature: hmac-sha256:[0-9a-f]{64}")
         self.assertIn("- Owns: A", text)
 

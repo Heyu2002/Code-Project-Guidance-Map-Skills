@@ -108,7 +108,6 @@ Guide format: action-map:v2
 Generated at: <ISO-8601 timestamp>
 Git baseline: <HEAD sha or none>
 Signature key id: <repo-scoped key id>
-Signature algorithm: hmac-sha256:v2
 Signature: hmac-sha256:<64 lowercase hex chars>
 
 ### Agent Editing Rules

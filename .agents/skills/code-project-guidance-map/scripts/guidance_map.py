@@ -424,18 +424,18 @@ def signature_is_valid(
         or not guide_format
         or not timestamp
         or baseline is None
-        or not algorithm
         or not key_id
         or not signature
         or secret is None
     ):
         return False
-    if guide_format != GUIDE_FORMAT or algorithm != SIGNATURE_ALGORITHM or not signature.startswith("hmac-sha256:"):
+    effective_algorithm = algorithm or (SIGNATURE_ALGORITHM if signature.startswith("hmac-sha256:") else None)
+    if guide_format != GUIDE_FORMAT or effective_algorithm != SIGNATURE_ALGORITHM or not signature.startswith("hmac-sha256:"):
         return False
     guidance = guidance_body_from_block(block)
     if guidance is None:
         return False
-    expected = compute_signature(secret, generator, guide_format, timestamp, baseline, algorithm, key_id, guidance)
+    expected = compute_signature(secret, generator, guide_format, timestamp, baseline, effective_algorithm, key_id, guidance)
     return hmac.compare_digest(signature, expected)
 
 
@@ -517,7 +517,6 @@ def render_block(guidance: str, timestamp: str, baseline: str, key_id: str, secr
             f"Generated at: {timestamp}",
             f"Git baseline: {baseline}",
             f"Signature key id: {key_id}",
-            f"Signature algorithm: {SIGNATURE_ALGORITHM}",
             f"Signature: {signature}",
             "",
             guidance,

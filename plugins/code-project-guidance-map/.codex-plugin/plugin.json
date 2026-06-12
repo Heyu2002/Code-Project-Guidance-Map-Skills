@@ -1,6 +1,6 @@
 {
   "name": "code-project-guidance-map",
-  "version": "0.1.0+codex.20260611085133",
+  "version": "0.1.0+codex.20260612023103",
   "description": "Create and refresh concise AGENTS.md action maps for Codex project editing.",
   "author": {
     "name": "Heyu2002"
@@ -16,7 +16,7 @@
   "interface": {
     "displayName": "Code Project Guidance Map",
     "shortDescription": "Create AGENTS.md project editing action maps.",
-    "longDescription": "Builds and refreshes marker-delimited AGENTS.md guidance with Agent Editing Rules, Task Routing, Module Dependency Rules, and a concise Module Map. The main agent decides macro module boundaries, while explicitly authorized subagents can inspect module internals for evidence, contained paths, dependency clues, and structure notes.",
+    "longDescription": "Builds and refreshes marker-delimited AGENTS.md guidance with Agent Editing Rules, Task Routing, Module Dependency Rules, and a concise Module Map. Generated blocks are plugin-owned and protected with a plugin-authenticated signature so manual edits become unverifiable. The main agent decides macro module boundaries, while explicitly authorized subagents can inspect module internals for evidence, contained paths, dependency clues, and structure notes.",
     "developerName": "Heyu2002",
     "category": "Productivity",
     "capabilities": [

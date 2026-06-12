@@ -44,9 +44,9 @@ python <skill-dir>/scripts/guidance_map.py verify --repo <repo-root>
 3. If `AGENTS.md` is missing or has no guidance block, ask the user whether to read the project and generate the guide. If the user already explicitly requested generation or refresh, treat that as consent and continue.
 
 4. If a guidance block exists:
-   - Read its `Generated at` timestamp and `sha256:v1` signature metadata.
+   - Read its `Generated at` timestamp and `hmac-sha256:v2` signature metadata.
    - Use the script `verify` JSON to inspect Git changes since that timestamp, including committed, staged, unstaged, and untracked files.
-   - If the timestamp is missing or invalid, or if the signature is missing or invalid, perform a full project read.
+   - If the timestamp is missing or invalid, if the signing key is unavailable, or if the signature is missing or invalid, perform a full project read.
    - If `recommended_action` is `refresh_dependency_rules`, re-evaluate `Agent Editing Rules`, `Module Dependency Rules`, and affected module entries.
    - If `recommended_action` is `refresh_task_routing_and_affected_modules`, refresh task routing guidance and affected module entries without re-reading unrelated modules.
    - If `recommended_action` is `refresh_affected_modules`, re-read only affected modules.
@@ -107,8 +107,9 @@ Generator: code-project-guidance-map
 Guide format: action-map:v2
 Generated at: <ISO-8601 timestamp>
 Git baseline: <HEAD sha or none>
-Signature algorithm: sha256:v1
-Signature: sha256:<64 lowercase hex chars>
+Signature key id: <repo-scoped key id>
+Signature algorithm: hmac-sha256:v2
+Signature: hmac-sha256:<64 lowercase hex chars>
 
 ### Agent Editing Rules
 
@@ -154,7 +155,7 @@ Keep every module entry compact. Prefer one line per field. Avoid implementation
 - Preserve unchanged module entries verbatim when they still match the current project.
 - Do a full refresh when:
   - marker metadata is missing or invalid;
-  - the `sha256:v1` signature is missing or invalid;
+  - the `hmac-sha256:v2` signature is missing, invalid, or cannot be verified because the signing key is unavailable;
   - many directories moved or were deleted;
   - build/package manifests changed in ways that alter module boundaries;
   - the existing guide is too stale to safely patch incrementally.
@@ -163,8 +164,10 @@ Keep every module entry compact. Prefer one line per field. Avoid implementation
 
 - Never edit files other than `AGENTS.md` for a target project unless the user explicitly asks.
 - Never remove user-authored `AGENTS.md` content outside the marker block.
+- Treat the generated marker block as plugin-owned. Do not manually edit generated block contents; manual edits invalidate the signature and require a plugin refresh.
 - If marker structure is malformed, stop and report the issue instead of guessing.
 - Do not include secrets, credentials, or private environment details in the generated guide.
+- Do not write signing secrets into the repository or `AGENTS.md`. The helper stores a local key outside the target repository by default, or uses `CODE_PROJECT_GUIDANCE_MAP_SECRET` / `CODE_PROJECT_GUIDANCE_MAP_KEY_FILE` when configured.
 - Standardize on `AGENTS.md`; do not create or update `Agent.md`.
 
 ## Validation

@@ -24,6 +24,13 @@ python <installed-skill>\scripts\guidance_map.py verify --repo . --fail-on error
 
 This fails only when the guidance block is missing, malformed, has an unsupported guide format, or has invalid metadata/signature.
 
+Signature verification needs the same plugin signing key that created the block. For CI, provide one of:
+
+- `CODE_PROJECT_GUIDANCE_MAP_SECRET`: shared HMAC secret stored in CI secrets.
+- `CODE_PROJECT_GUIDANCE_MAP_KEY_FILE`: path to a mounted key file.
+
+Without a configured key, CI treats an existing generated block as unverifiable and asks for a plugin refresh.
+
 For stricter projects, use:
 
 ```powershell

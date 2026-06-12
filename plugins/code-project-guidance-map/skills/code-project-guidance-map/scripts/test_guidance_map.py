@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -14,12 +15,33 @@ from pathlib import Path
 import guidance_map
 
 
+TEST_SECRET_HEX = "11" * 32
+TEST_SECRET = bytes.fromhex(TEST_SECRET_HEX)
+TEST_KEY_ID = "repo:test"
+
+
+def render_test_block(body: str, timestamp: str, baseline: str) -> str:
+    return guidance_map.render_block(body, timestamp, baseline, TEST_KEY_ID, TEST_SECRET)
+
+
 class GuidanceMapTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         self.repo = Path(self.tmp.name)
+        self.old_secret = os.environ.get(guidance_map.SIGNATURE_SECRET_ENV)
+        self.old_key_home = os.environ.get(guidance_map.SIGNATURE_KEY_HOME_ENV)
+        os.environ[guidance_map.SIGNATURE_SECRET_ENV] = TEST_SECRET_HEX
+        os.environ[guidance_map.SIGNATURE_KEY_HOME_ENV] = str(self.repo / ".keys")
 
     def tearDown(self) -> None:
+        if self.old_secret is None:
+            os.environ.pop(guidance_map.SIGNATURE_SECRET_ENV, None)
+        else:
+            os.environ[guidance_map.SIGNATURE_SECRET_ENV] = self.old_secret
+        if self.old_key_home is None:
+            os.environ.pop(guidance_map.SIGNATURE_KEY_HOME_ENV, None)
+        else:
+            os.environ[guidance_map.SIGNATURE_KEY_HOME_ENV] = self.old_key_home
         self.tmp.cleanup()
 
     def guidance_text(self, owns: str = "A") -> str:
@@ -55,8 +77,9 @@ class GuidanceMapTests(unittest.TestCase):
         self.assertIn(guidance_map.START_MARKER, text)
         self.assertIn("Generator: code-project-guidance-map", text)
         self.assertIn("Guide format: action-map:v2", text)
-        self.assertIn("Signature algorithm: sha256:v1", text)
-        self.assertRegex(text, r"Signature: sha256:[0-9a-f]{64}")
+        self.assertIn("Signature key id: repo:", text)
+        self.assertIn("Signature algorithm: hmac-sha256:v2", text)
+        self.assertRegex(text, r"Signature: hmac-sha256:[0-9a-f]{64}")
         self.assertIn("- Owns: A", text)
 
     def test_status_validates_signature(self) -> None:
@@ -72,6 +95,27 @@ class GuidanceMapTests(unittest.TestCase):
         self.assertFalse(tampered["signature_valid"])
         self.assertTrue(tampered["requires_full_read"])
 
+    def test_status_requires_signature_key(self) -> None:
+        block = render_test_block("body", "2026-01-01T00:00:00Z", "abc123")
+        (self.repo / "AGENTS.md").write_text(block, encoding="utf-8")
+        os.environ.pop(guidance_map.SIGNATURE_SECRET_ENV, None)
+        result = guidance_map.status(self.repo)
+        self.assertFalse(result["signature_key_available"])
+        self.assertFalse(result["signature_valid"])
+        self.assertTrue(result["requires_full_read"])
+
+    def test_update_creates_local_signature_key_without_env_secret(self) -> None:
+        os.environ.pop(guidance_map.SIGNATURE_SECRET_ENV, None)
+        result = guidance_map.update(self.repo, self.write_guidance(), "2026-01-01T00:00:00Z")
+        key_source = Path(str(result["signature_key_source"]))
+        self.assertTrue(key_source.exists())
+        self.assertEqual(key_source.parent, self.repo / ".keys")
+
+        status = guidance_map.status(self.repo)
+        self.assertTrue(status["signature_key_available"])
+        self.assertTrue(status["signature_valid"])
+        self.assertFalse(status["requires_full_read"])
+
     def test_update_appends_block_when_agents_has_no_block(self) -> None:
         (self.repo / "AGENTS.md").write_text("# Existing\n\nKeep this.\n", encoding="utf-8")
         guidance_map.update(self.repo, self.write_guidance(), "2026-01-01T00:00:00Z")
@@ -80,7 +124,7 @@ class GuidanceMapTests(unittest.TestCase):
         self.assertIn(guidance_map.START_MARKER, text)
 
     def test_update_replaces_block_and_preserves_outside_content(self) -> None:
-        old_block = guidance_map.render_block("old", "2025-01-01T00:00:00Z", "abc123")
+        old_block = render_test_block("old", "2025-01-01T00:00:00Z", "abc123")
         (self.repo / "AGENTS.md").write_text(f"before\n\n{old_block}\nafter\n", encoding="utf-8")
         guidance_map.update(self.repo, self.write_guidance(self.guidance_text("new")), "2026-01-01T00:00:00Z")
         text = (self.repo / "AGENTS.md").read_text(encoding="utf-8")
@@ -91,7 +135,7 @@ class GuidanceMapTests(unittest.TestCase):
         self.assertEqual(text.count(guidance_map.START_MARKER), 1)
 
     def test_status_reports_invalid_signature_time(self) -> None:
-        block = guidance_map.render_block("body", "2026-01-01T00:00:00Z", "abc123")
+        block = render_test_block("body", "2026-01-01T00:00:00Z", "abc123")
         block = block.replace("Generated at: 2026-01-01T00:00:00Z", "Generated at: not-a-date")
         (self.repo / "AGENTS.md").write_text(block, encoding="utf-8")
         result = guidance_map.status(self.repo)
@@ -100,7 +144,7 @@ class GuidanceMapTests(unittest.TestCase):
         self.assertTrue(result["requires_full_read"])
 
     def test_status_reports_unsupported_guide_format(self) -> None:
-        block = guidance_map.render_block("body", "2026-01-01T00:00:00Z", "abc123")
+        block = render_test_block("body", "2026-01-01T00:00:00Z", "abc123")
         block = block.replace("Guide format: action-map:v2\n", "")
         (self.repo / "AGENTS.md").write_text(block, encoding="utf-8")
         result = guidance_map.status(self.repo)
@@ -173,6 +217,10 @@ class GuidanceMapGitTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         self.repo = Path(self.tmp.name)
+        self.old_secret = os.environ.get(guidance_map.SIGNATURE_SECRET_ENV)
+        self.old_key_home = os.environ.get(guidance_map.SIGNATURE_KEY_HOME_ENV)
+        os.environ[guidance_map.SIGNATURE_SECRET_ENV] = TEST_SECRET_HEX
+        os.environ[guidance_map.SIGNATURE_KEY_HOME_ENV] = str(self.repo / ".keys")
         self.git("init")
         self.git("config", "user.email", "test@example.com")
         self.git("config", "user.name", "Test User")
@@ -181,6 +229,14 @@ class GuidanceMapGitTests(unittest.TestCase):
         self.git("commit", "-m", "initial")
 
     def tearDown(self) -> None:
+        if self.old_secret is None:
+            os.environ.pop(guidance_map.SIGNATURE_SECRET_ENV, None)
+        else:
+            os.environ[guidance_map.SIGNATURE_SECRET_ENV] = self.old_secret
+        if self.old_key_home is None:
+            os.environ.pop(guidance_map.SIGNATURE_KEY_HOME_ENV, None)
+        else:
+            os.environ[guidance_map.SIGNATURE_KEY_HOME_ENV] = self.old_key_home
         self.tmp.cleanup()
 
     def git(self, *args: str) -> subprocess.CompletedProcess[str]:
@@ -208,7 +264,7 @@ class GuidanceMapGitTests(unittest.TestCase):
             "- Do not put here: Shared utilities.\n"
             "- Key entry points: `app/`\n"
         )
-        block = guidance_map.render_block(body, "2030-01-01T00:00:00Z", "abc123")
+        block = render_test_block(body, "2030-01-01T00:00:00Z", "abc123")
         (self.repo / "AGENTS.md").write_text(block, encoding="utf-8")
         self.git("add", "AGENTS.md")
         self.git("commit", "-m", "guide")
@@ -222,7 +278,7 @@ class GuidanceMapGitTests(unittest.TestCase):
         (self.repo / "committed.txt").write_text("changed\n", encoding="utf-8")
         (self.repo / "untracked.txt").write_text("untracked\n", encoding="utf-8")
 
-        block = guidance_map.render_block("body", "2000-01-01T00:00:00Z", "abc123")
+        block = render_test_block("body", "2000-01-01T00:00:00Z", "abc123")
         (self.repo / "AGENTS.md").write_text(block, encoding="utf-8")
         result = guidance_map.status(self.repo)
 
@@ -233,7 +289,7 @@ class GuidanceMapGitTests(unittest.TestCase):
         self.assertIn("untracked.txt", changed)
 
     def test_clean_repo_with_later_timestamp_has_no_changes(self) -> None:
-        block = guidance_map.render_block("body", "2030-01-01T00:00:00Z", "abc123")
+        block = render_test_block("body", "2030-01-01T00:00:00Z", "abc123")
         (self.repo / "AGENTS.md").write_text(block, encoding="utf-8")
         self.git("add", "AGENTS.md")
         self.git("commit", "-m", "guide")

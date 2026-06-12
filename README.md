@@ -24,7 +24,7 @@ When you invoke this skill in a target repository, it will:
 - Read the previous generation time and incrementally refresh affected modules when the block already exists.
 - Keep macro module boundary decisions in the main agent while using explicitly authorized subagents for module-internal exploration.
 - Generate `Agent Editing Rules`, `Task Routing`, and `Module Dependency Rules` sections that capture project-specific editing constraints, routing hints, and dependency boundaries.
-- Store a parseable `sha256:v1` signature and force a full refresh if generated metadata or signed content no longer verifies.
+- Store a plugin-authenticated `hmac-sha256:v2` signature and force a full refresh if generated metadata, the signing key, or signed content no longer verifies.
 - Update only the content inside the marker block while preserving all human-written `AGENTS.md` content outside it.
 
 The fixed marker block is:
@@ -45,6 +45,8 @@ The generated block is action-oriented:
 - `Change here when`: when future edits should land in the module.
 - `Do not put here`: responsibilities that belong elsewhere.
 - `Key entry points`: compact files or directories to read first.
+
+The marker block is plugin-owned. Manual edits to generated content invalidate the signature; the supported maintenance path is to run the skill again. By default, the helper creates a repo-scoped signing key outside the target repository under the Codex user directory. Teams or CI can provide a shared signing secret with `CODE_PROJECT_GUIDANCE_MAP_SECRET` or a key file with `CODE_PROJECT_GUIDANCE_MAP_KEY_FILE`.
 
 ## Quick Start
 
@@ -116,8 +118,9 @@ Generator: code-project-guidance-map
 Guide format: action-map:v2
 Generated at: 2026-06-11T10:30:00Z
 Git baseline: abc1234
-Signature algorithm: sha256:v1
-Signature: sha256:<64 lowercase hex chars>
+Signature key id: repo:1a2b3c4d5e6f7890
+Signature algorithm: hmac-sha256:v2
+Signature: hmac-sha256:<64 lowercase hex chars>
 
 ### Agent Editing Rules
 

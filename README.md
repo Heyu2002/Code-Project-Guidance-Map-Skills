@@ -26,6 +26,7 @@ When you invoke this skill in a target repository, it will:
 - Generate `Agent Editing Rules`, `Task Routing`, and `Module Dependency Rules` sections that capture project-specific editing constraints, routing hints, and dependency boundaries.
 - Store a plugin-authenticated `hmac-sha256:v2` signature and force a full refresh if generated metadata, the signing key, or signed content no longer verifies.
 - Update only the content inside the marker block while preserving all human-written `AGENTS.md` content outside it.
+- Run lightweight plugin hooks on `SessionStart` and `UserPromptSubmit` to detect stale, missing, or unverifiable guidance and inject bounded Codex context before code edits.
 
 The fixed marker block is:
 
@@ -102,7 +103,7 @@ Use the guide before larger feature work:
 Use $code-project-guidance-map, then help me identify where this feature should be implemented.
 ```
 
-v1 requires explicit user invocation. It does not promise an automatic popup the instant Codex enters a project, but once the guide is generated, later Codex sessions can read `AGENTS.md` automatically.
+Guide generation and refresh still happen through the skill, but the installed plugin also includes lightweight hooks. On `SessionStart`, the hook verifies the current repository's guidance block and adds bounded context if it is missing, stale, or unverifiable. On `UserPromptSubmit`, the hook only adds context for code-edit-like prompts when the guide needs attention. The hooks do not edit files or refresh `AGENTS.md`; they nudge Codex to suggest `$code-project-guidance-map` before the first code edit.
 
 Subagents are explicit. The recommended prompts above authorize them up front, so Codex should not stop to ask again. The main agent first drafts the macro module map, then spawns the smallest useful set of subagents with bounded path scopes for internal structure and evidence. Subagents must not edit files or decide the global module map. If subagent tools are unavailable, the main agent completes the same exploration locally and reports the fallback.
 
@@ -175,6 +176,7 @@ This repository already contains a distributable plugin package:
 - Development skill: `.agents/skills/code-project-guidance-map/`
 - Installable plugin: `plugins/code-project-guidance-map/`
 - Plugin manifest: `plugins/code-project-guidance-map/.codex-plugin/plugin.json`
+- Plugin hooks: `plugins/code-project-guidance-map/hooks/`
 - Local marketplace: `.agents/plugins/marketplace.json`
 
 To install the plugin, users need access to this repository and then run:
@@ -213,6 +215,9 @@ To publish it through a team marketplace:
     └── code-project-guidance-map/
         ├── .codex-plugin/
         │   └── plugin.json
+        ├── hooks/
+        │   ├── guidance_map_hook.py
+        │   └── hooks.json
         └── skills/
             └── code-project-guidance-map/
 ```
@@ -238,6 +243,7 @@ Then validate:
 python scripts\test_sync_plugin_skill.py
 python .agents\skills\code-project-guidance-map\scripts\test_guidance_map.py
 python plugins\code-project-guidance-map\skills\code-project-guidance-map\scripts\test_guidance_map.py
+python plugins\code-project-guidance-map\hooks\test_guidance_map_hook.py
 python <codex-checkout>\codex-rs\skills\src\assets\samples\skill-creator\scripts\quick_validate.py .agents\skills\code-project-guidance-map
 python <codex-checkout>\codex-rs\skills\src\assets\samples\skill-creator\scripts\quick_validate.py plugins\code-project-guidance-map\skills\code-project-guidance-map
 python <plugin-creator-skill>\scripts\validate_plugin.py plugins\code-project-guidance-map

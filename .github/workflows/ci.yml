@@ -28,5 +28,8 @@ jobs:
       - name: Test plugin skill helper
         run: python plugins/code-project-guidance-map/skills/code-project-guidance-map/scripts/test_guidance_map.py
 
+      - name: Test plugin hooks
+        run: python plugins/code-project-guidance-map/hooks/test_guidance_map_hook.py
+
       - name: Validate plugin manifest JSON
         run: python -m json.tool plugins/code-project-guidance-map/.codex-plugin/plugin.json
